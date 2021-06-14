@@ -1,0 +1,62 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{tchdr}
+\usepackage{tikz}
+\usepackage{caption}
+\usepackage{subcaption}
+\usetikzlibrary{bayesnet}
+\newcommand{\algorithmautorefname}{Algorithm}
+
+\title{Learning Exchangeable Representations}
+\author{Berend Zwartsenberg }
+\date{April 2021}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+In many statistical models, sequences appear that need to be \emph{exchangeable}, i.e., the likelihood should not change regardless of the order of the random variables question. Examples of this include any type of mixture model, where one does not expect the ordering of the mixture components to have any particular meaning. This permutation invariance is a challenge in inference problems specified by probabilistic programs, where an ``execution trace'' imposes a strict ordering on these variables, regardless of their underlying permutation invariance. An effective proposal distribution therefore has to learn this invariance from examples, and since the number of equivalent permutations grows as $n!$, one can expect to require a number of samples that scales roughy so. Hence, it seems clear that embedding this exchangeability in a more fundamental way has the potential to make inference much more tractable. 
+
+\section{Exchangeability}
+If we have a sequence of random variables $\mathbf{x_1}, \dots, \mathbf{x_n}$, de Finetti's theorem tells us this sequence is exchangeable, if and only if there exists a distribution such that:
+\[
+\label{eq:definetti}
+p(\mathbf{x_1}, \dots, \mathbf{x_n}) = \int p(\theta) \prod_{i=1}^n p(\mathbf{x_i} | \theta) \dee \theta.
+\]
+In other words, if a sequence is exchangeable, some latent variable exists, so that the elements of the sequence are i.i.d conditional on that variable. The proposal is to attempt to learn this representation, by constructing some sort of flexible distribution that follows this structure. \footnote{This is not yet very rigorous, particularly, I know that de Finetti only holds for infinite sequences. However, \cite{Diaconis1980} gives some instructions on how to extend this to finite sequences (haven't fully absorbed that yet). Details might change.} 
+
+\section{Application}
+An immediate application of such exchangeable sequences are mixture models. Another example of a model with exchangeable variables is the one we have been attempting to define for experiments to support the probabilistic surrogate network paper \cite{Munk2019}. I will briefly describe that model here. The model is based around the CARLA \cite{Dosovitskiy17} simulator, a virtual simulator built for the use with self driving cars. The way in which we use it is to simply generate still images of scenes that one might encounter while driving. The model we define starts by placing an ``ego-vehicle'', and then samples a Poisson distributed number of surrounding cars. Then, for each of the sampled values, a car is placed using a rejection loop, so that cars are not placed on buildings, or overlap with one another. Finally, the simulator is used to render a depth image, which is used as the mean for a Gaussian likelihood. A full overview of the algorithm is given in \autoref{alg:carla}. Note that the rendering and likelihood part of the algorithm are not particularly important for this story. It is important to point out that the function $c(\mathbf{x})$ is aware of the previously spawned cars, i.e., it will reject a spawn location if it overlaps with previously spawned cars. A sequence of accepted cars $\mathbf{x_1}, \dots \mathbf{x_N}$ will be constructed. It appears evident that this final sequence of accepted cars is exchangeable, or in other words, that the joint probability should be invariant to any permutations you make in the cars \footnote{I had a long discussion about this with Frank, and we are still not quite sure this is indeed the case. It seems very obvious, but also hard to prove. Potentially the rejected samples have something to do with it too.}. Therefore, we could hope that we could find a representation that follows the one in \autoref{eq:definetti}
+
+\begin{algorithm}
+\begin{algorithmic}[1]
+\Require $c(\mathbf{x})$ a function that evaluates to true if $\mathbf{x}$ is a valid spawn point
+\Require $\lambda$, a hyperparameter controlling the number of cars
+\Require $spawn(\mathbf{x})$, a function spawning a car at $\mathbf{x}$ in the environment
+\Require $render()$, render a depth image of the environment
+\State $N \sim \mathrm{Poisson}(\lambda)$
+\For{$i\in [1,N]$}
+\While{True}
+\State $\mathbf{x} \sim \mathrm{Uniform}()$ \hfill $//$ this is a distribution over $x,y,yaw$
+\If{$c(\mathbf{x})$}
+  \State $\mathbf{x_i} \gets \mathbf{x}$
+  \State $spawn(\mathbf{x_i})$
+  \State $\mathbf{break}$
+\EndIf
+\EndWhile
+\EndFor
+\State $\mu_m = render()$
+\State $m \sim \mathrm{Normal}(\mu_m, \sigma)$
+\end{algorithmic}
+\caption{\label{alg:carla} Generative model for car scenes}
+\end{algorithm}
+
+\section{Approach}
+We propose to construct a surrogate model that is equivalent to the one described in \autoref{alg:carla}, with one important change, which is to model the sequence of accepted cars $\mathbf{x_1}, \dots \mathbf{x_N}$ explicitly in a form that admits a representation as in \autoref{eq:definetti}. There are some works that attempt to do this. The work from Rasul constructs a normalizing flow \cite{Rasul2019}, while the (very incomplete) work of \cite{Dosovitskiy17} constructs a type of autoencoder (TODO: more thorough lit review). A normalizing flow seems of more interest, because it would be convenient to not only sample, but also calculate a likelihood. In general, my suggestion would be to learn some kind of distribution over latent parameter $p(\theta)$, for which we have a likelihood in closed form, and then learn a distribution $p(\mathbf{x}|\theta)$ using a normalizing flow.
+
+
+\bibliographystyle{plain}
+\bibliography{exchangeability}
+
+\end{document}
