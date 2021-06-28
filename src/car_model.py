@@ -190,5 +190,6 @@ if __name__ == '__main__':
     print('Spawned number of vehicles: ', number_of_vehicles)
 
     ax.pcolormesh(model.x, model.y, image.detach().numpy(), shading='auto')
+    plt.show()
 
     plt.savefig('img/test.png')
