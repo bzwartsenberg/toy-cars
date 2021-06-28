@@ -8,6 +8,7 @@ from pyprob import Model
 from pyprob.distributions import Normal, Uniform, Poisson
 from types import SimpleNamespace
 import matplotlib.pyplot as plt
+import torch
 
 
 class Car():
@@ -30,10 +31,7 @@ class Car():
         self.xy[:, 0] += self.x
         self.xy[:, 1] += self.y
 
-        self.poly = Polygon(corners)
-
-
-
+        self.poly = Polygon(self.xy)
 
     def overlaps_with_others(self, other_cars):
         for other_car in other_cars:
@@ -45,10 +43,10 @@ class Car():
         if self.intersect(other_car) > 0.:
             return True
 
-     def intersect(self, other_car):
-         """Calc intersection with other car"""
+    def intersect(self, other_car):
+        """Calc intersection with other car"""
 
-        area_overlap = self.base_poly.intersection(other_car.base_poly).area
+        area_overlap = self.poly.intersection(other_car.poly).area
         return area_overlap
 
     def draw_img(self, x,y, img):
@@ -81,10 +79,12 @@ def map_accept(x, y):
 class CarModel(Model):
     """model"""
     def __init__(self, args):
+        super().__init__(name="Generative model")
+
         self.accepted_cars = []
 
-        self.x = np.linspace(-15, 15, 100)
-        self.y = np.linspace(-15, 15, 100)
+        self.x = np.linspace(-15, 15, 1000)
+        self.y = np.linspace(-15, 15, 1000)
 
         self.args = args
 
@@ -121,8 +121,9 @@ class CarModel(Model):
         num_vehicles_float = pyprob.sample(num_vehicles_dist,
                                            name="num_vehicles_float_sample",
                                            constants=num_vehicles_dist.get_input_parameters())
-        number_of_vehicles = torch.min(torch.round(num_vehicles_float),
-                                       max_vehicles)
+        number_of_vehicles = torch.max(torch.tensor(0.),
+                                       torch.min(torch.round(num_vehicles_float),
+                                       max_vehicles))
 
         if verbose:
             print('\n\nNumber of other vehicles to spawn: ',
@@ -152,18 +153,20 @@ class CarModel(Model):
                            y.item()).overlaps_with_others(self.accepted_cars):
                     self.accepted_cars.append(Car(x.item(), y.item()))
                     break
-                else:
-                    attempts += 1
-                    if attempts > self.args.max_attempts:
-                        break
 
-        image = torch.FloatTensor(self.to_image()).permute(2, 0, 1).to(pyprob.util._device)[0:1]
+                attempts += 1
+                if attempts > self.args.max_attempts:
+                    break
+
+        image = torch.FloatTensor(self.to_image()).to(pyprob.util._device)
 
         scale = torch.tensor(self.args.lik_sigma).to(pyprob.util._device)
         likelihood = Normal(image, scale)
         pyprob.observe(likelihood, name="depth_image_sample",constants={'scale'
                                                                         :
                                                                         scale})
+        # TODO: somehow add a "fail" variable for whenever you don't spawn all
+        # the cars.
         if generate_samples:
             return number_of_vehicles, image
         else:
@@ -172,17 +175,20 @@ class CarModel(Model):
 
 
 if __name__ == '__main__':
+
+    pyprob.set_random_seed(42424242)
+
     args = SimpleNamespace()
 
 
     model = CarModel(args)
 
-    number_of_vehicles, image = model.forward(generate_samples)
+    number_of_vehicles, image = model.get_trace(generate_samples=True, verbose=True).result
 
     fig,ax = plt.subplots(figsize=(10,10))
 
     print('Spawned number of vehicles: ', number_of_vehicles)
 
-    ax.pcolormesh(model.x, model.y, image.detach().numpy())
+    ax.pcolormesh(model.x, model.y, image.detach().numpy(), shading='auto')
 
-    plt.savefig('../img/test.png')
+    plt.savefig('img/test.png')
