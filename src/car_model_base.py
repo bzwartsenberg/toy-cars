@@ -3,7 +3,7 @@ import numpy as np
 import PIL.Image as Image
 from pyprob import Model
 from util import Car
-
+import pyprob
 
 class BaseCarModel(Model):
     """model."""
@@ -46,3 +46,24 @@ class BaseCarModel(Model):
     def reset_model(self):
         """Reset."""
         self.accepted_cars = []
+
+
+    def forward(self):
+        """The forward model, place cars and generate a scene."""
+        self.reset_model()
+
+        number_of_vehicles = 1
+
+        # ---> place your cars here <---
+
+        image = torch.FloatTensor(self.to_image()).to(pyprob.util._device)
+
+        scale = torch.tensor(self.args.lik_sigma).to(pyprob.util._device)
+        likelihood = Normal(image, scale)
+        pyprob.observe(likelihood, name="depth_image_sample",
+                       constants={'scale': scale})
+
+        if generate_samples:
+            return number_of_vehicles, image
+        else:
+            return number_of_vehicles
