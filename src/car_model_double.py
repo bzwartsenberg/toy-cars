@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from util import Car
 
 
-class CarModelSingle(BaseCarModel):
+class CarModelDouble(BaseCarModel):
     """car model with single car."""
 
     def __init__(self, args):
@@ -23,7 +23,7 @@ class CarModelSingle(BaseCarModel):
         """Forward function."""
         self.reset_model()
 
-        number_of_vehicles = 1
+        number_of_vehicles = 2
 
         if verbose:
             print('\n\nNumber of other vehicles to spawn: ',
@@ -75,7 +75,7 @@ if __name__ == '__main__':
 
     args = SimpleNamespace()
 
-    model = CarModelSingle(args)
+    model = CarModelDouble(args)
 
     number_of_vehicles, image = model.get_trace(generate_samples=True, verbose=True).result
 

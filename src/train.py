@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
-from car_model_single import CarModel
+from car_model_single import CarModelSingle
+from car_model_double import CarModelDouble
 from types import SimpleNamespace
 import pyprob
 from pyprob import util
 from torch import nn
 import torch
 import numpy as np
+
+models = {
+    'car_model_single': CarModelSingle,
+    'car_model_double': CarModelDouble,
+}
 
 def init_kaiming_normal(convlayer): #both for conv and linear
     torch.nn.init.kaiming_normal_(convlayer.weight, a=np.sqrt(5))
@@ -64,7 +70,7 @@ class EmbeddingConv2DStridedSimple(nn.Module):
 
 def train(args):
 
-    model = CarModel(args)
+    model = models[args.model_name](args)
 
     model.learn_inference_network(
         num_traces=args.batch_size*args.num_batches,
@@ -78,7 +84,7 @@ def train(args):
         batch_size=args.batch_size,
         dataset_dir=args.dataset_dir,
         dataset_valid_dir=args.dataset_valid_dir,
-        save_file_name_prefix='output/inference',
+        save_file_name_prefix=('output/inference_' + args.model_name),
         proposal_mixture_components=args.inf_mixture_components,
 
         lstm_dim=args.inf_lstm_dim,
@@ -98,6 +104,9 @@ def train(args):
 if __name__ == '__main__':
 
     args = SimpleNamespace()
+
+
+    args.model_name = 'car_model_double'
 
     args.num_batches = 150000
     args.batch_size = 64
