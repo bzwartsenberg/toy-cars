@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from car_model_single import CarModelSingle
 from car_model_double import CarModelDouble
+from car_model_n import CarModelN
 from types import SimpleNamespace
 import pyprob
 from pyprob import util
@@ -11,6 +12,7 @@ import numpy as np
 models = {
     'car_model_single': CarModelSingle,
     'car_model_double': CarModelDouble,
+    'car_model_n': CarModelN,
 }
 
 def init_kaiming_normal(convlayer): #both for conv and linear
@@ -106,9 +108,9 @@ if __name__ == '__main__':
     args = SimpleNamespace()
 
 
-    args.model_name = 'car_model_double'
+    args.model_name = 'car_model_n'
 
-    args.num_batches = 150000
+    args.num_batches = 1000
     args.batch_size = 64
     args.dataset_dir = None
     args.dataset_valid_dir = None
@@ -124,5 +126,8 @@ if __name__ == '__main__':
     args.inf_em_hidden_dim = 128
     args.width = 256
     args.height = 256
+
+    args.n_cars = 1  # note: this is only used for car_model_n
+    args.lik_sigma = 0.1
 
     train(args)
