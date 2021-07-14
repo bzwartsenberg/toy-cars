@@ -92,7 +92,7 @@ def train(args):
         batch_size=args.batch_size,
         dataset_dir=args.dataset_dir,
         dataset_valid_dir=args.dataset_valid_dir,
-        save_file_name_prefix=('output/inference_' + args.model_name),
+        save_file_name_prefix=args.model_dir,
         proposal_mixture_components=args.inf_mixture_components,
 
         lstm_dim=args.inf_lstm_dim,
@@ -103,6 +103,7 @@ def train(args):
         distribution_type_embedding_dim=args.inf_dist_em_dim,
 
         learning_rate_init=args.inf_lr_init,
+        wandb_run=args.wandb_run,
 
                                  )
 

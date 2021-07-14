@@ -55,6 +55,9 @@ def my_config():
 
     sort_trace = False
 
+    train = True
+
+
 def seed_all(seed):  # thanks Vaden
     """Seed all devices deterministically off of seed independently."""
     np.random.seed(seed)
@@ -86,7 +89,7 @@ def my_main(_config, _run):
     """Run automain."""
     args = init(_config, _run)
     wandb_run = wandb.init(project=WANDB_PROJECT_NAME,
-                            config=_config,
-                              tags=[_run.experiment_info['name']])
+                           config=_config,
+                           tags=[_run.experiment_info['name']])
     args.wandb_run = wandb_run
     main(args)
