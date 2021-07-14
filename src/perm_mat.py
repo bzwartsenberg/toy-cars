@@ -4,7 +4,7 @@ import torch
 def make_p_mat(K):
     """Make a matrix of permuations."""
     mat = [[int(k1 == k2) for k2 in range(len(K))] for k1 in K]
-    return torch.tensor(mat)
+    return torch.tensor(mat).float()
 
 
 def transform(A, P):

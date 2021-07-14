@@ -17,6 +17,9 @@ class BaseCarModel(Model):
         self.x = np.linspace(-10, 10, 256)
         self.y = np.linspace(-10, 10, 256)
 
+        self.x_max = self.x.max()
+        self.y_max = self.y.max()
+
         self.args = args
 
     def to_image(self, x=None, y=None):
@@ -37,6 +40,10 @@ class BaseCarModel(Model):
     def attempt_to_place_car(self, x, y, rot=0):
         """Attempt to place car, return True if succesful, False otherwise."""
         newcar = Car(x.item(), y.item(), rot=rot)
+
+        if abs(newcar.x) > self.x_max or abs(newcar.y) > self.y_max:
+            return False
+
         if not newcar.overlaps_with_others(self.accepted_cars):
             self.accepted_cars.append(newcar)
             return True

@@ -34,22 +34,22 @@ class CarModelNAll(BaseCarModel):
             if verbose:
                 print('Attempt number: ', attempts)
 
-            x_pos = torch.zeros(args.n_cars).to(pyprob.util._device)
-            y_pos = torch.zeros(args.n_cars).to(pyprob.util._device)
-            x_scale = torch.ones(args.n_cars).to(pyprob.util._device) \
-                * self.args.spread
-            y_scale = torch.ones(args.n_cars).to(pyprob.util._device) \
-                * self.args.spread
+            offset = torch.tensor(0.).to(pyprob.util._device)
+            scale = torch.tensor(self.args.spread).to(pyprob.util._device)
 
-            x_dist = Normal(x_pos, x_scale)
-            y_dist = Normal(y_pos, y_scale)
+            x_dist = Normal(offset, scale)
+            y_dist = Normal(offset, scale)
 
-            x = x_dist.sample()
-            y = y_dist.sample()
-
-            if self.args.sort:
-                pass
-                # TODO: sort here?
+            xs, ys = [], []
+            for i in range(int(number_of_vehicles)):
+                x = pyprob.sample(x_dist,
+                                  name="x_sample_{}_{}".format(i, attempts),
+                                  constants=x_dist.get_input_parameters())
+                y = pyprob.sample(y_dist,
+                                  name="y_sample_{}_{}".format(i, attempts),
+                                  constants=y_dist.get_input_parameters())
+                xs.append(x.to(pyprob.util._device))
+                ys.append(y.to(pyprob.util._device))
 
             success = True
             for i in range(int(number_of_vehicles)):
@@ -57,7 +57,7 @@ class CarModelNAll(BaseCarModel):
                     print('Spawning car', i, 'out of',
                           int(number_of_vehicles))
 
-                success &= self.attempt_to_place_car(x[i], y[i])
+                success &= self.attempt_to_place_car(xs[i], ys[i])
 
                 if not success:
                     break  # stop trying
@@ -70,9 +70,9 @@ class CarModelNAll(BaseCarModel):
 
         scale = torch.tensor(self.args.lik_sigma).to(pyprob.util._device)
         likelihood = Normal(image, scale)
-        pyprob.observe(likelihood, name="depth_image_sample",constants={'scale'
-                                                                        :
-                                                                        scale})
+        pyprob.observe(likelihood,
+                       name="depth_image_sample",
+                       constants={'scale': scale})
         if generate_samples:
             return number_of_vehicles, image
         else:
@@ -80,8 +80,6 @@ class CarModelNAll(BaseCarModel):
 
 
 if __name__ == '__main__':
-
-
     for i in range(10):
         pyprob.set_random_seed(i)
 
@@ -90,7 +88,7 @@ if __name__ == '__main__':
         args.n_cars = 5
         args.sort = False
         args.lik_sigma = 0.1
-        args.spread = 5.
+        args.spread = 3.
         args.max_attempts = 100
         model = CarModelNAll(args)
 
