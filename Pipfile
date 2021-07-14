@@ -9,6 +9,8 @@ pillow = "*"
 matplotlib = "*"
 shapely = "*"
 pyprob = {editable = true, path = "./../pyprob"}
+sacred = "*"
+wandb = "*"
 
 [dev-packages]
 
