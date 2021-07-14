@@ -7,6 +7,11 @@ from types import SimpleNamespace
 import matplotlib.pyplot as plt
 from util import Car
 
+if torch.cuda.is_available():
+    print('Using Cuda')
+    pyprob.util.set_device('cuda')
+else:
+    print('Cuda not found')
 
 class CarModelNAll(BaseCarModel):
     """car model with single car."""
